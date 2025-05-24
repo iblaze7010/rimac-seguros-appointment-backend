@@ -1,0 +1,33 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# TypeScript
+dist/
+build/
+*.tsbuildinfo
+
+# Serverless Framework
+.serverless/
+.serverless_plugins/
+.serverless_plugins_cache/
+
+# Logs
+logs/
+*.log
+
+# Env files
+.env
+.env.*.local
+
+# MacOS
+.DS_Store
+
+# VSCode
+.vscode/
+
+# Otros
+*.tgz
