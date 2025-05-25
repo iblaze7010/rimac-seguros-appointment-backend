@@ -18,7 +18,7 @@ export const postAppointment: APIGatewayProxyHandler = async (event) => {
       return { statusCode: 400, body: "Missing required fields" };
     }
     if (!["PE", "CL"].includes(body.countryISO)) {
-      return { statusCode: 400, body: "countryISO must be PE or CL" };
+      return { statusCode: 422, body: "countryISO must be PE or CL" };
     }
 
     const appointment = createAppointment(body);

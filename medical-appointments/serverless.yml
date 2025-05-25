@@ -17,22 +17,73 @@ provider:
     RDS_DATABASE_PE: ${env:RDS_DATABASE_PE}
     RDS_DATABASE_CL: ${env:RDS_DATABASE_CL}
 
+plugins:
+  - serverless-dotenv-plugin
+  - serverless-openapi-documentation
+
 functions:
-  healthCheck:
-    handler: src/handlers/health.handler
-    events:
-      - httpApi:
-          path: /health
-          method: GET
   appointment:
     handler: src/handlers/appointment.postAppointment
     events:
       - http:
           path: appointments
           method: post
+          documentation:
+            summary: Crear una cita médica
+            description: Registra una cita en DynamoDB y publica un evento SNS.
+            requestBody:
+              description: Datos del agendamiento
+              required: true
+            requestModels:
+              "application/json": CreateAppointmentRequest
+            methodResponses:
+              - statusCode: 202
+                responseBody:
+                  description: Cita registrada correctamente
+                responseModels:
+                  "application/json": AppointmentCreatedResponse
+              - statusCode: 400
+                responseBody:
+                  description: Error en los datos de entrada
+                responseModels:
+                  "application/json": ErrorResponse400Create
+              - statusCode: 422
+                responseBody:
+                  description: Error en los datos de entrada
+                responseModels:
+                  "application/json": ErrorResponse422Country
+              - statusCode: 500
+                responseBody:
+                  description: Error interno del servidor
+                responseModels:
+                  "application/json": ErrorResponse500
       - http:
           path: appointments/{insuredId}
           method: get
+          documentation:
+            summary: Consultar citas de un asegurado
+            description: Devuelve todas las citas registradas de un asegurado dado.
+            pathParams:
+              - name: insuredId
+                description: ID del asegurado
+                required: true
+                type: string
+            methodResponses:
+              - statusCode: 200
+                responseBody:
+                  description: Lista de citas encontradas
+                responseModels:
+                  "application/json": AppointmentList
+              - statusCode: 400
+                responseBody:
+                  description: Parámetro insuredId faltante
+                responseModels:
+                  "application/json": ErrorResponse400GetIn
+              - statusCode: 500
+                responseBody:
+                  description: Error interno del servidor
+                responseModels:
+                  "application/json": ErrorResponse500
       - sqs:
           arn:
             Fn::GetAtt:
@@ -54,6 +105,122 @@ functions:
             Fn::GetAtt:
               - SqsClQueue
               - Arn
+
+custom:
+  documentation:
+    version: "1.0.0"
+    title: API de Citas Médicas
+    description: API REST para registrar y consultar citas médicas.
+    models:
+      - name: CreateAppointmentRequest
+        contentType: application/json
+        schema:
+          type: object
+          required:
+            - insuredId
+            - scheduleId
+            - countryISO
+          properties:
+            insuredId:
+              type: string
+              example: "01234"
+            scheduleId:
+              type: number
+              example: 100
+            countryISO:
+              type: string
+              enum:
+                - PE
+                - CL
+              example: "PE"
+
+      - name: AppointmentCreatedResponse
+        contentType: application/json
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Appointment scheduled. Processing..."
+            appointmentId:
+              type: string
+              example: "123"
+
+      - name: AppointmentList
+        contentType: application/json
+        schema:
+          type: array
+          items:
+            type: object
+            properties:
+              appointmentId:
+                type: string
+              insuredId:
+                type: string
+              scheduleId:
+                type: number
+              countryISO:
+                type: string
+              status:
+                type: string
+              createdAt:
+                type: string
+                format: date-time
+
+      - name: ErrorResponse400Create
+        contentType: application/json
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+              description: Mensaje de error
+              example: "Missing required fields"
+            details:
+              type: string
+              description: Detalles adicionales del error
+              example: "The fields insuredId, scheduleId and countryISO are required"
+
+      - name: ErrorResponse422Country
+        contentType: application/json
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+              description: Mensaje de error
+              example: "Error countryISO "
+            details:
+              type: string
+              description: Detalles adicionales del error
+              example: "countryISO must be PE or CL"
+      - name: ErrorResponse400GetIn
+        contentType: application/json
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+              description: Mensaje de error
+              example: "Missing required fields"
+            details:
+              type: string
+              description: Detalles adicionales del error
+              example: "Missing insuredId param"
+
+      - name: ErrorResponse500
+        contentType: application/json
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+              description: Mensaje de error
+              example: "Error"
+            details:
+              type: string
+              description: Detalles adicionales del error
+              example: "Internal Server Error"
 
 resources:
   Resources:

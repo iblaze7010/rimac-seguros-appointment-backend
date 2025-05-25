@@ -35,7 +35,7 @@ describe("Handlers tests", () => {
       expect(res?.body).toBe("Missing required fields");
     });
 
-    it("returns 400 if countryISO invalid", async () => {
+    it("returns 422 if countryISO invalid", async () => {
       const event = {
         body: JSON.stringify({
           insuredId: "123",
@@ -44,7 +44,7 @@ describe("Handlers tests", () => {
         }),
       } as APIGatewayProxyEvent;
       const res = await postAppointment(event, {} as any, () => {});
-      expect(res?.statusCode).toBe(400);
+      expect(res?.statusCode).toBe(422);
       expect(res?.body).toBe("countryISO must be PE or CL");
     });
 
