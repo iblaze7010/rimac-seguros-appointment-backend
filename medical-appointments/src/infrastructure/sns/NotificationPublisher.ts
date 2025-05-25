@@ -1,7 +1,9 @@
-import { SNS } from "aws-sdk";
+// src/infrastructure/sns/SnsPublisher.ts
+
+import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
 import { Appointment } from "../../domain/models/appointment";
 
-const sns = new SNS();
+const snsClient = new SNSClient({});
 
 export async function publishAppointment(
   appointment: Appointment
@@ -9,16 +11,16 @@ export async function publishAppointment(
   const TOPIC_ARN = process.env.SNS_TOPIC_ARN!;
   const message = JSON.stringify(appointment);
 
-  await sns
-    .publish({
-      TopicArn: TOPIC_ARN,
-      Message: message,
-      MessageAttributes: {
-        countryISO: {
-          DataType: "String",
-          StringValue: appointment.countryISO,
-        },
+  const command = new PublishCommand({
+    TopicArn: TOPIC_ARN,
+    Message: message,
+    MessageAttributes: {
+      countryISO: {
+        DataType: "String",
+        StringValue: appointment.countryISO,
       },
-    })
-    .promise();
+    },
+  });
+
+  await snsClient.send(command);
 }

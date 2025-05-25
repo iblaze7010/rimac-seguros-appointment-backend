@@ -1,31 +1,36 @@
-import { DynamoDB } from "aws-sdk";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+
+import {
+  DynamoDBDocumentClient,
+  PutCommand,
+  UpdateCommand,
+  QueryCommand,
+} from "@aws-sdk/lib-dynamodb";
+
 import {
   Appointment,
   AppointmentStatus,
 } from "../../domain/models/appointment";
 
-const dynamo = new DynamoDB.DocumentClient();
 const TABLE_NAME = process.env.DYNAMODB_TABLE_NAME!;
+const client = new DynamoDBClient({});
+const dynamo = DynamoDBDocumentClient.from(client);
 
 export async function saveAppointment(appointment: Appointment): Promise<void> {
-  const item = {
-    ...appointment,
-  };
-
-  await dynamo
-    .put({
+  await dynamo.send(
+    new PutCommand({
       TableName: TABLE_NAME,
-      Item: item,
+      Item: appointment,
     })
-    .promise();
+  );
 }
 
 export async function updateAppointmentStatus(
   id: string,
   status: AppointmentStatus
 ): Promise<void> {
-  await dynamo
-    .update({
+  await dynamo.send(
+    new UpdateCommand({
       TableName: TABLE_NAME,
       Key: { id },
       UpdateExpression: "set #status = :status, updatedAt = :updatedAt",
@@ -37,14 +42,14 @@ export async function updateAppointmentStatus(
         ":updatedAt": new Date().toISOString(),
       },
     })
-    .promise();
+  );
 }
 
 export async function getAppointmentsByInsuredId(
   insuredId: string
 ): Promise<Appointment[]> {
-  const result = await dynamo
-    .query({
+  const result = await dynamo.send(
+    new QueryCommand({
       TableName: TABLE_NAME,
       IndexName: "insuredId-index",
       KeyConditionExpression: "insuredId = :insuredId",
@@ -52,8 +57,7 @@ export async function getAppointmentsByInsuredId(
         ":insuredId": insuredId,
       },
     })
-    .promise();
+  );
 
-  const items = result.Items as Appointment[] | undefined;
-  return items ?? [];
+  return (result.Items as Appointment[]) ?? [];
 }

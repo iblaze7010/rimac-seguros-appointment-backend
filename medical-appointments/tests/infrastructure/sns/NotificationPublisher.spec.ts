@@ -1,22 +1,21 @@
-// tests\infrastructure\sns\NotificationPublisher.spec.ts
-import { SNS } from "aws-sdk";
-import {
-  Appointment,
-  AppointmentStatus,
-} from "../../../src/domain/models/appointment";
+// tests/infrastructure/sns/NotificationPublisher.spec.ts
 
-const mockPublishFn = jest.fn();
-const mockPromiseFn = jest.fn();
+const mockSend = jest.fn();
 
-jest.mock("aws-sdk", () => {
+jest.mock("@aws-sdk/client-sns", () => {
   return {
-    SNS: jest.fn().mockImplementation(() => ({
-      publish: mockPublishFn,
+    SNSClient: jest.fn(() => ({
+      send: mockSend,
     })),
+    PublishCommand: jest.requireActual("@aws-sdk/client-sns").PublishCommand,
   };
 });
 
 import { publishAppointment } from "../../../src/infrastructure/sns/NotificationPublisher";
+import {
+  Appointment,
+  AppointmentStatus,
+} from "../../../src/domain/models/appointment";
 
 describe("publishAppointment", () => {
   const appointment: Appointment = {
@@ -34,32 +33,31 @@ describe("publishAppointment", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockPublishFn.mockReturnValue({
-      promise: mockPromiseFn.mockResolvedValue({}),
-    });
   });
 
   it("should publish appointment to SNS with correct parameters", async () => {
+    mockSend.mockResolvedValueOnce({}); // simula respuesta exitosa
+
     await publishAppointment(appointment);
 
-    expect(mockPublishFn).toHaveBeenCalledWith({
-      TopicArn: process.env.SNS_TOPIC_ARN,
-      Message: JSON.stringify(appointment),
-      MessageAttributes: {
-        countryISO: {
-          DataType: "String",
-          StringValue: "PE",
+    expect(mockSend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        input: {
+          TopicArn: process.env.SNS_TOPIC_ARN,
+          Message: JSON.stringify(appointment),
+          MessageAttributes: {
+            countryISO: {
+              DataType: "String",
+              StringValue: "PE",
+            },
+          },
         },
-      },
-    });
-
-    expect(mockPromiseFn).toHaveBeenCalled();
+      })
+    );
   });
 
   it("should throw error if SNS publish fails", async () => {
-    mockPublishFn.mockReturnValueOnce({
-      promise: jest.fn().mockRejectedValueOnce(new Error("SNS publish failed")),
-    });
+    mockSend.mockRejectedValueOnce(new Error("SNS publish failed"));
 
     await expect(publishAppointment(appointment)).rejects.toThrow(
       "SNS publish failed"

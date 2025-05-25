@@ -1,14 +1,15 @@
 // tests/infrastructure/eventbridge/EventPublisher.spec.ts
+const mockSend = jest.fn();
 
-var mockPutEvents = jest.fn().mockReturnThis();
-var mockPromise = jest.fn();
-
-jest.mock("aws-sdk", () => ({
-  EventBridge: jest.fn().mockImplementation(() => ({
-    putEvents: mockPutEvents,
-    promise: mockPromise,
-  })),
-}));
+jest.mock("@aws-sdk/client-eventbridge", () => {
+  return {
+    EventBridgeClient: jest.fn(() => ({
+      send: mockSend,
+    })),
+    PutEventsCommand: jest.requireActual("@aws-sdk/client-eventbridge")
+      .PutEventsCommand,
+  };
+});
 
 import { publishAppointmentCompleted } from "../../../src/infrastructure/eventbridge/EventPublisher";
 import {
@@ -21,8 +22,8 @@ describe("publishAppointmentCompleted", () => {
     jest.clearAllMocks();
   });
 
-  it("should call putEvents with correct parameters", async () => {
-    mockPromise.mockResolvedValue({ FailedEntryCount: 0 });
+  it("should call send with correct PutEventsCommand and parameters", async () => {
+    mockSend.mockResolvedValue({ FailedEntryCount: 0 });
 
     const appointment: Appointment = {
       id: "abc123",
@@ -37,23 +38,25 @@ describe("publishAppointmentCompleted", () => {
 
     await publishAppointmentCompleted(appointment);
 
-    expect(mockPutEvents).toHaveBeenCalledWith({
-      Entries: [
-        {
-          EventBusName: "test-bus",
-          Source: "appointment.app",
-          DetailType: "AppointmentCompleted",
-          Detail: JSON.stringify(appointment),
+    expect(mockSend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        input: {
+          Entries: [
+            {
+              EventBusName: "test-bus",
+              Source: "appointment.app",
+              DetailType: "AppointmentCompleted",
+              Detail: JSON.stringify(appointment),
+            },
+          ],
         },
-      ],
-    });
-
-    expect(mockPromise).toHaveBeenCalled();
+      })
+    );
   });
 
-  it("should throw error when putEvents fails", async () => {
+  it("should throw error when send fails", async () => {
     const error = new Error("EventBridge error");
-    mockPromise.mockRejectedValue(error);
+    mockSend.mockRejectedValue(error);
 
     const appointment: Appointment = {
       id: "abc123",
@@ -70,7 +73,6 @@ describe("publishAppointmentCompleted", () => {
       "EventBridge error"
     );
 
-    expect(mockPutEvents).toHaveBeenCalled();
-    expect(mockPromise).toHaveBeenCalled();
+    expect(mockSend).toHaveBeenCalled();
   });
 });
