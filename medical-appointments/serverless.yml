@@ -6,8 +6,17 @@ provider:
   runtime: nodejs20.x
   region: us-east-1
   environment:
-    DYNAMODB_TABLE: ${self:service}-${sls:stage}
-
+    DYNAMODB_TABLE_NAME: ${self:service}-${sls:stage}
+    SNS_TOPIC_ARN:
+          Ref: AppointmentSnsTopic
+    EVENT_BUS_NAME:
+      Ref: AppointmentEventBus
+    RDS_HOST: ${env:RDS_HOST}
+    RDS_USER: ${env:RDS_USER}
+    RDS_PASSWORD: ${env:RDS_PASSWORD}
+    RDS_DATABASE_PE: ${env:RDS_DATABASE_PE}
+    RDS_DATABASE_CL: ${env:RDS_DATABASE_CL}
+    
 functions:
   healthCheck:
     handler: src/handlers/health.handler
@@ -15,3 +24,17 @@ functions:
       - httpApi:
           path: /health
           method: GET
+  appointment:
+  handler: src/handlers/appointment.postAppointment
+  events:
+    - http:
+        path: appointments
+        method: post
+    - http:
+        path: appointments/{insuredId}
+        method: get
+    - sqs:
+        arn:
+          Fn::GetAtt:
+            - AppointmentConfirmationQueue
+            - Arn
