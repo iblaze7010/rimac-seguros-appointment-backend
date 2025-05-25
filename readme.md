@@ -21,7 +21,7 @@ La petición se procesa de forma distinta por país (Perú 🇵🇪 y Chile 🇨
 
 La solución utiliza servicios serverless de AWS como Lambda, SNS, SQS, DynamoDB, RDS y EventBridge.
 
-![Arquitectura](./assets/arquitectura.png)
+![Arquitectura](./medical-appointments/assets/arquitectura.png)
 
 ### Pasos del flujo
 
@@ -70,13 +70,13 @@ Registrar una nueva cita médica.
   "scheduleId": 100,
   "countryISO": "PE"
 }
-
+```
 **Response body:**
 ```json
 {
   "message": "Appointment scheduling in process"
 }
-
+```
 ### GET `/appointments/{insuredId}`
 Consultar todas las citas de un asegurado.
 
@@ -90,16 +90,16 @@ Consultar todas las citas de un asegurado.
     "status": "completed"
   }
 ]
-
+```
 ## Pruebas
-```json
+```txt
 npm install
 npm test
-
+```
 ## Despliegue
 1. Configura tus credenciales de AWS.
 2. Modifica el archivo .env con los valores requeridos (credenciales RDS).
 3. Despliega con Serverless Framework:
-```json
+```txt
 sls deploy --stage dev
-
+```
