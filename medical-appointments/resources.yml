@@ -1,0 +1,274 @@
+Resources:
+  # iam-policies
+  AppointmentLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: appointment-lambda-role-${sls:stage}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: appointment-policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:Query
+                  - dynamodb:UpdateItem
+                Resource:
+                  - arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:service}-${sls:stage}
+                  - arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:service}-${sls:stage}/index/insuredId-index
+              - Effect: Allow
+                Action:
+                  - sns:Publish
+                Resource:
+                  - arn:aws:sns:${self:provider.region}:${aws:accountId}:${self:service}-${sls:stage}-appointments-topic
+
+  AppointmentConfirmationLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: appointment-confirmation-lambda-role-${sls:stage}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: appointment-confirmation-policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:Query
+                  - dynamodb:UpdateItem
+                Resource:
+                  - arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:service}-${sls:stage}
+                  - arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:service}-${sls:stage}/index/insuredId-index
+              - Effect: Allow
+                Action:
+                  - sqs:ReceiveMessage
+                  - sqs:GetQueueAttributes
+                Resource:
+                  - arn:aws:sqs:${self:provider.region}:${aws:accountId}:${self:service}-${sls:stage}-SQS_Confirmations
+
+  AppointmentPeLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: appointment-pe-lambda-role-${sls:stage}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: appointment-pe-policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - events:PutEvents
+                Resource:
+                  - arn:aws:events:${self:provider.region}:${aws:accountId}:event-bus/${self:service}-${sls:stage}-eventbus
+              - Effect: Allow
+                Action:
+                  - sqs:ReceiveMessage
+                  - sqs:GetQueueAttributes
+                Resource:
+                  - arn:aws:sqs:${self:provider.region}:${aws:accountId}:${self:service}-${sls:stage}-SQS_PE
+
+  AppointmentClLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: appointment-cl-lambda-role-${sls:stage}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: appointment-cl-policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - events:PutEvents
+                Resource:
+                  - arn:aws:events:${self:provider.region}:${aws:accountId}:event-bus/${self:service}-${sls:stage}-eventbus
+              - Effect: Allow
+                Action:
+                  - sqs:ReceiveMessage
+                  - sqs:GetQueueAttributes
+                Resource:
+                  - arn:aws:sqs:${self:provider.region}:${aws:accountId}:${self:service}-${sls:stage}-SQS_CL
+
+  # DynamoDB table
+  AppointmentsDynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ${self:service}-${sls:stage}
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: insuredId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: insuredId-index
+          KeySchema:
+            - AttributeName: insuredId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      BillingMode: PAY_PER_REQUEST
+
+  # SQS Queues for PE and CL
+  SqsPeQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: ${self:service}-${sls:stage}-SQS_PE
+  SqsClQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: ${self:service}-${sls:stage}-SQS_CL
+
+  # SNS Topic
+  AppointmentSnsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: ${self:service}-${sls:stage}-appointments-topic
+
+  # SNS subscriptions with filter policies
+  SnsSubscriptionPe:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn:
+        Ref: AppointmentSnsTopic
+      Protocol: sqs
+      Endpoint:
+        Fn::GetAtt: [SqsPeQueue, Arn]
+      FilterPolicy:
+        countryISO:
+          - PE
+
+  SnsSubscriptionCl:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn:
+        Ref: AppointmentSnsTopic
+      Protocol: sqs
+      Endpoint:
+        Fn::GetAtt: [SqsClQueue, Arn]
+      FilterPolicy:
+        countryISO:
+          - CL
+
+  # EventBridge bus
+  AppointmentEventBus:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: ${self:service}-${sls:stage}-eventbus
+
+  # EventBridge Rule to route completed appointments to SQS confirmation queue
+  AppointmentEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      EventBusName:
+        Ref: AppointmentEventBus
+      EventPattern:
+        source:
+          - appointment.app
+        detail-type:
+          - AppointmentCompleted
+      Targets:
+        - Arn:
+            Fn::GetAtt:
+              - AppointmentConfirmationQueue
+              - Arn
+          Id: "AppointmentConfirmationTarget"
+
+  # SQS queue for confirmations
+  AppointmentConfirmationQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: ${self:service}-${sls:stage}-SQS_Confirmations
+
+  # Permissions for SNS to send messages to SQS queues
+  SqsPeQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - Ref: SqsPeQueue
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: "*"
+            Action: sqs:SendMessage
+            Resource:
+              Fn::GetAtt: [SqsPeQueue, Arn]
+            Condition:
+              ArnEquals:
+                "aws:SourceArn":
+                  Ref: AppointmentSnsTopic
+  SqsClQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - Ref: SqsClQueue
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: "*"
+            Action: sqs:SendMessage
+            Resource:
+              Fn::GetAtt: [SqsClQueue, Arn]
+            Condition:
+              ArnEquals:
+                "aws:SourceArn":
+                  Ref: AppointmentSnsTopic
+  AppointmentConfirmationQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - Ref: AppointmentConfirmationQueue
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: sqs:SendMessage
+            Resource:
+              Fn::GetAtt: [AppointmentConfirmationQueue, Arn]
+            Condition:
+              ArnEquals:
+                aws:SourceArn:
+                  Fn::GetAtt:
+                    - AppointmentEventRule
+                    - Arn

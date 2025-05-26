@@ -1,5 +1,6 @@
 service: medical-appointments
 frameworkVersion: "4"
+configValidationMode: off
 
 provider:
   name: aws
@@ -18,8 +19,9 @@ provider:
     RDS_DATABASE_CL: ${env:RDS_DATABASE_CL}
 
 plugins:
-  - serverless-dotenv-plugin
   - serverless-openapi-documentation
+custom:
+  documentation: ${file(./serverless.doc.yml):documentation}
 
 functions:
   appointment:
@@ -29,10 +31,13 @@ functions:
       - http:
           path: appointments
           method: post
+          documentation: ${file(./serverless.doc.yml):endpoint.appointmentPost}
 
       - http:
           path: appointments/get
           method: get
+          documentation: ${file(./serverless.doc.yml):endpoint.appointmentGet}
+
   appointment_confirmation:
     handler: src/handlers/appointment_confirmation.processCompletionFromSQS
     role: AppointmentConfirmationLambdaRole
@@ -60,9 +65,6 @@ functions:
             Fn::GetAtt:
               - SqsClQueue
               - Arn
-
-custom:
-  documentation: ${file(./serverless.doc.yml):documentation}
 
 resources:
   Resources: ${file(./resources.yml):Resources}

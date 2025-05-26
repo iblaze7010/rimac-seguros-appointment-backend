@@ -31,7 +31,7 @@ La solución utiliza servicios serverless de AWS como Lambda, SNS, SQS, DynamoDB
 4. El SNS enruta al SQS correspondiente.
 5. Lambdas `appointment_pe` o `appointment_cl` procesan y almacenan en MySQL (RDS).
 6. Se emite un evento por EventBridge, que llega a un SQS final.
-7. Lambda `appointment` actualiza la cita como `completed` en DynamoDB.
+7. Lambda `appointment_confirmation` actualiza la cita como `completed` en DynamoDB.
 
 ---
 
@@ -61,9 +61,11 @@ src/
 ## Endpoints
 
 ### POST `/appointments`
+
 Registrar una nueva cita médica.
 
 **Request body:**
+
 ```json
 {
   "insuredId": "01234",
@@ -71,16 +73,22 @@ Registrar una nueva cita médica.
   "countryISO": "PE"
 }
 ```
+
 **Response body:**
+
 ```json
 {
-  "message": "Appointment scheduling in process"
+  "message": "Appointment scheduled. Processing...",
+  "appointmentId": "123"
 }
 ```
+
 ### GET `/appointments/{insuredId}`
+
 Consultar todas las citas de un asegurado.
 
 **Response body:**
+
 ```json
 [
   {
@@ -91,15 +99,20 @@ Consultar todas las citas de un asegurado.
   }
 ]
 ```
+
 ## Pruebas
+
 ```txt
 npm install
 npm test
 ```
+
 ## Despliegue
+
 1. Configura tus credenciales de AWS.
 2. Modifica el archivo .env con los valores requeridos (credenciales RDS).
 3. Despliega con Serverless Framework:
+
 ```txt
 sls deploy --stage dev
 ```

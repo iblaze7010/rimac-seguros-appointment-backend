@@ -11,7 +11,7 @@ import {
 import { publishAppointment } from "../infrastructure/sns/NotificationPublisher";
 import { hasRequiredFields, isValidCountryISO } from "../utils/validation";
 import { createResponse } from "../utils/response";
-import { MESSAGES } from "../utils/constants";
+import { ERROR, MESSAGES } from "../utils/constants";
 
 export const appointmentHandler: APIGatewayProxyHandler = async (event) => {
   try {
@@ -21,11 +21,17 @@ export const appointmentHandler: APIGatewayProxyHandler = async (event) => {
       case "GET":
         return await handleGetAppointments(event);
       default:
-        return createResponse(405, MESSAGES.METHOD_NOT_ALLOWED);
+        return createResponse(405, {
+          error: ERROR.METHOD_NOT_ALLOWED,
+          details: MESSAGES.METHOD_NOT_ALLOWED,
+        });
     }
   } catch (error) {
     console.error(error);
-    return createResponse(500, MESSAGES.INTERNAL_SERVER_ERROR);
+    return createResponse(500, {
+      error: ERROR.INTERNAL_SERVER_ERROR,
+      details: MESSAGES.INTERNAL_SERVER_ERROR,
+    });
   }
 };
 
@@ -34,14 +40,23 @@ const handlePostAppointment = async (
 ): Promise<APIGatewayProxyResult> => {
   try {
     if (!event.body) {
-      return createResponse(400, MESSAGES.MISSING_BODY);
+      return createResponse(400, {
+        error: ERROR.MISSING_BODY,
+        details: MESSAGES.MISSING_BODY,
+      });
     }
     const body = JSON.parse(event.body);
     if (!hasRequiredFields(body)) {
-      return createResponse(400, MESSAGES.MISSING_REQUIRED_FIELDS);
+      return createResponse(400, {
+        error: ERROR.MISSING_REQUIRED_FIELDS,
+        details: MESSAGES.MISSING_REQUIRED_FIELDS,
+      });
     }
     if (!isValidCountryISO(body.countryISO)) {
-      return createResponse(422, MESSAGES.INVALID_COUNTRY_ISO);
+      return createResponse(422, {
+        error: ERROR.INVALID_COUNTRY_ISO,
+        details: MESSAGES.INVALID_COUNTRY_ISO,
+      });
     }
 
     const appointment = createAppointment(body);
@@ -56,7 +71,10 @@ const handlePostAppointment = async (
     });
   } catch (error) {
     console.error(error);
-    return createResponse(500, MESSAGES.INTERNAL_SERVER_ERROR);
+    return createResponse(500, {
+      error: ERROR.INTERNAL_SERVER_ERROR,
+      details: MESSAGES.INTERNAL_SERVER_ERROR,
+    });
   }
 };
 
@@ -66,7 +84,10 @@ const handleGetAppointments = async (
   const insuredId = event.queryStringParameters?.insuredId;
 
   if (!insuredId) {
-    return { statusCode: 400, body: "Missing id query parameter" };
+    return createResponse(400, {
+      error: MESSAGES.MISSING_REQUIRED_FIELDS,
+      details: "Missing insuredId param",
+    });
   }
 
   const appointments = await getAppointmentsByInsuredId(insuredId);

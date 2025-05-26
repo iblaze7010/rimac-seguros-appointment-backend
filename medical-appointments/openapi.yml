@@ -10,95 +10,103 @@ components:
       properties:
         insuredId:
           type: string
-          description: ID del asegurado
           example: "01234"
         scheduleId:
           type: number
-          description: ID del horario de la cita
           example: 100
         countryISO:
           type: string
-          description: Código ISO del país (PE o CL)
           enum:
             - PE
             - CL
           example: PE
-
     AppointmentCreatedResponse:
       type: object
       properties:
         message:
           type: string
-          description: Mensaje de confirmación
-          example: "Appointment scheduled. Processing..."
-        appointmentId:
+          example: Appointment scheduled. Processing...
+        id:
           type: string
-          description: ID único de la cita generada
           example: "123"
-
     AppointmentList:
       type: array
-      description: Listado de citas médicas
       items:
         type: object
         properties:
-          appointmentId:
+          id:
             type: string
-            description: ID único de la cita
           insuredId:
             type: string
-            description: ID del asegurado
           scheduleId:
             type: number
-            description: ID del horario
           countryISO:
             type: string
-            description: País de la cita
           status:
             type: string
-            description: Estado de la cita
           createdAt:
             type: string
             format: date-time
-            description: Fecha de creación
-
-    ErrorResponse:
+          updatedAt:
+            type: string
+            format: date-time
+    ErrorResponse400Create:
       type: object
       properties:
         error:
           type: string
-          description: Tipo de error
-          example: "ValidationError"
-        message:
-          type: string
-          description: Mensaje descriptivo del error
-          example: "Missing required fields"
+          description: Mensaje de error
+          example: Missing required fields
         details:
-          type: array
-          description: Detalles específicos del error
-          items:
-            type: string
-          example: ["insuredId is required", "countryISO must be PE or CL"]
-
+          type: string
+          description: Detalles adicionales del error
+          example: "The fields insuredId, scheduleId and countryISO are required"
+    ErrorResponse422Country:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Mensaje de error
+          example: "Error countryISO "
+        details:
+          type: string
+          description: Detalles adicionales del error
+          example: countryISO must be PE or CL
+    ErrorResponse400GetIn:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Mensaje de error
+          example: Missing required fields
+        details:
+          type: string
+          description: Detalles adicionales del error
+          example: Missing insuredId param
+    ErrorResponse500:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Mensaje de error
+          example: Internal Server Error
+        details:
+          type: string
+          description: Detalles adicionales del error
+          example: Internal Server Error
   securitySchemes: {}
-
 info:
   title: API de Citas Médicas
-  description: API REST para registrar y consultar citas médicas
+  description: API REST para registrar y consultar citas médicas.
   version: 1.0.0
-  contact:
-    email: soporte@medicalappointments.com
-
 paths:
   /appointments:
     post:
-      operationId: createAppointment
+      operationId: appointment
       summary: Crear una cita médica
-      description: Registra una cita en DynamoDB y publica un evento SNS
-      tags:
-        - Appointments
+      description: Registra una cita en DynamoDB y publica un evento SNS.
       requestBody:
-        description: Datos requeridos para crear la cita
+        description: Datos del agendamiento
         required: true
         content:
           application/json:
@@ -106,45 +114,42 @@ paths:
               $ref: "#/components/schemas/CreateAppointmentRequest"
       responses:
         "202":
-          description: Cita registrada exitosamente
+          description: Cita registrada correctamente
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/AppointmentCreatedResponse"
         "400":
-          description: Error de validación en los datos de entrada
+          description: Error en los datos de entrada
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorResponse400Create"
         "422":
-          description: Error semántico en los datos
+          description: Error en los datos de entrada
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorResponse422Country"
         "500":
           description: Error interno del servidor
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
-
-  "/appointments/{insuredId}":
+                $ref: "#/components/schemas/ErrorResponse500"
+  /appointments/get:
     get:
-      operationId: getAppointmentsByInsured
-      summary: Obtener citas por ID de asegurado
-      description: Devuelve todas las citas registradas de un asegurado
-      tags:
-        - Appointments
+      operationId: appointmentGet
+      summary: Consultar citas de un asegurado
+      description: Devuelve todas las citas registradas de un asegurado dado.
       parameters:
         - name: insuredId
-          in: path
-          description: ID del asegurado
+          in: query
           required: true
+          description: ID del asegurado
           schema:
             type: string
-          example: "01234"
+            example: "01234"
       responses:
         "200":
           description: Lista de citas encontradas
@@ -153,20 +158,14 @@ paths:
               schema:
                 $ref: "#/components/schemas/AppointmentList"
         "400":
-          description: Parámetro inválido
+          description: Parámetro insuredId faltante
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "404":
-          description: No se encontraron citas
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorResponse400GetIn"
         "500":
           description: Error interno del servidor
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/ErrorResponse500"
