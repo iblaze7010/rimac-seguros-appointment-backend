@@ -1,24 +1,47 @@
-import { APIGatewayProxyHandler, SQSEvent, SQSHandler } from "aws-lambda";
+import {
+  APIGatewayProxyEvent,
+  APIGatewayProxyHandler,
+  APIGatewayProxyResult,
+} from "aws-lambda";
 import { createAppointment } from "../application/scheduleAppointment";
 import {
   saveAppointment,
   getAppointmentsByInsuredId,
-  updateAppointmentStatus,
 } from "../infrastructure/dynamodb/AppointmentRepository";
 import { publishAppointment } from "../infrastructure/sns/NotificationPublisher";
-import { Appointment, AppointmentStatus } from "../domain/models/appointment";
+import { hasRequiredFields, isValidCountryISO } from "../utils/validation";
+import { createResponse } from "../utils/response";
+import { MESSAGES } from "../utils/constants";
 
-export const postAppointment: APIGatewayProxyHandler = async (event) => {
+export const appointmentHandler: APIGatewayProxyHandler = async (event) => {
+  try {
+    switch (event.httpMethod) {
+      case "POST":
+        return await handlePostAppointment(event);
+      case "GET":
+        return await handleGetAppointments(event);
+      default:
+        return createResponse(405, MESSAGES.METHOD_NOT_ALLOWED);
+    }
+  } catch (error) {
+    console.error(error);
+    return createResponse(500, MESSAGES.INTERNAL_SERVER_ERROR);
+  }
+};
+
+const handlePostAppointment = async (
+  event: APIGatewayProxyEvent
+): Promise<APIGatewayProxyResult> => {
   try {
     if (!event.body) {
-      return { statusCode: 400, body: "Missing body" };
+      return createResponse(400, MESSAGES.MISSING_BODY);
     }
     const body = JSON.parse(event.body);
-    if (!body.insuredId || !body.scheduleId || !body.countryISO) {
-      return { statusCode: 400, body: "Missing required fields" };
+    if (!hasRequiredFields(body)) {
+      return createResponse(400, MESSAGES.MISSING_REQUIRED_FIELDS);
     }
-    if (!["PE", "CL"].includes(body.countryISO)) {
-      return { statusCode: 422, body: "countryISO must be PE or CL" };
+    if (!isValidCountryISO(body.countryISO)) {
+      return createResponse(422, MESSAGES.INVALID_COUNTRY_ISO);
     }
 
     const appointment = createAppointment(body);
@@ -27,51 +50,26 @@ export const postAppointment: APIGatewayProxyHandler = async (event) => {
 
     await publishAppointment(appointment);
 
-    return {
-      statusCode: 202,
-      body: JSON.stringify({
-        message: "Appointment scheduled. Processing...",
-        appointmentId: appointment.id,
-      }),
-    };
+    return createResponse(202, {
+      message: MESSAGES.APPOINTMENT_SCHEDULED,
+      appointmentId: appointment.id,
+    });
   } catch (error) {
     console.error(error);
-    return { statusCode: 500, body: "Internal Server Error" };
+    return createResponse(500, MESSAGES.INTERNAL_SERVER_ERROR);
   }
 };
 
-export const getAppointmentsByInsuredIdHandler: APIGatewayProxyHandler = async (
-  event
-) => {
-  try {
-    const insuredId = event.pathParameters?.insuredId;
-    if (!insuredId) {
-      return { statusCode: 400, body: "Missing insuredId param" };
-    }
+const handleGetAppointments = async (
+  event: APIGatewayProxyEvent
+): Promise<APIGatewayProxyResult> => {
+  const insuredId = event.queryStringParameters?.insuredId;
 
-    const appointments = await getAppointmentsByInsuredId(insuredId);
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify(appointments),
-    };
-  } catch (error) {
-    console.error(error);
-    return { statusCode: 500, body: "Internal Server Error" };
+  if (!insuredId) {
+    return { statusCode: 400, body: "Missing id query parameter" };
   }
-};
 
-export const processCompletionFromSQS: SQSHandler = async (event: SQSEvent) => {
-  for (const record of event.Records) {
-    const appointment: Appointment = JSON.parse(record.body);
-    try {
-      await updateAppointmentStatus(
-        appointment.id,
-        AppointmentStatus.Completed
-      );
-    } catch (error) {
-      console.error("Error updating appointment status:", error);
-      throw error;
-    }
-  }
+  const appointments = await getAppointmentsByInsuredId(insuredId);
+
+  return createResponse(200, appointments);
 };

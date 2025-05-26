@@ -22,7 +22,7 @@ describe("SQS Appointment_CL Handler", () => {
       {
         messageId: "1",
         receiptHandle: "",
-        body: JSON.stringify(appointmentMock),
+        body: JSON.stringify({ Message: JSON.stringify(appointmentMock) }),
         attributes: {} as any,
         messageAttributes: {},
         md5OfBody: "",

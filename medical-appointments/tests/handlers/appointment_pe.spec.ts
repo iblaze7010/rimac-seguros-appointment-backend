@@ -13,7 +13,6 @@ describe("SQS Appointment_PE Handler", () => {
     insuredId: "0001",
     scheduleId: 456,
     countryISO: "PE",
-    status: "pending",
     createdAt: new Date().toISOString(),
   };
 
@@ -22,7 +21,7 @@ describe("SQS Appointment_PE Handler", () => {
       {
         messageId: "1",
         receiptHandle: "",
-        body: JSON.stringify(appointmentMock),
+        body: JSON.stringify({ Message: JSON.stringify(appointmentMock) }),
         attributes: {} as any,
         messageAttributes: {},
         md5OfBody: "",
