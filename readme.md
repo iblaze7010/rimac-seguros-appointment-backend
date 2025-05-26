@@ -72,7 +72,7 @@ Registrar una nueva cita médica.
 }
 ```
 
-### GET `/appointments/{insuredId}`
+### GET `/appointments/get?insuredId=01234`
 
 Consultar todas las citas de un asegurado.
 
@@ -83,8 +83,11 @@ Consultar todas las citas de un asegurado.
   {
     "insuredId": "01234",
     "scheduleId": 100,
-    "countryISO": "PE",
-    "status": "completed"
+    "updatedAt": "2025-05-26T15:09:15.562Z",
+    "status": "completed",
+    "createdAt": "2025-05-26T15:09:15.329Z",
+    "id": "44cf8729-943d-49be-ac40-b8f7228e5feb",
+    "countryISO": "PE"
   }
 ]
 ```
