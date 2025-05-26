@@ -4,8 +4,15 @@ import {
 } from "@aws-sdk/client-eventbridge";
 import { Appointment } from "../../domain/models/appointment";
 
+// Initialize EventBridge client with default configuration
 const eventbridgeClient = new EventBridgeClient({});
 
+/**
+ * Publishes an "AppointmentCompleted" event to the specified EventBridge bus.
+ *
+ * @param appointment - The appointment object to publish as event detail.
+ * @throws Throws an error if the event publishing fails.
+ */
 export async function publishAppointmentCompleted(
   appointment: Appointment
 ): Promise<void> {

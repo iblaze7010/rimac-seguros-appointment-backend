@@ -1,3 +1,6 @@
+/**
+ * Standard error codes used in API responses.
+ */
 export const ERROR = {
   METHOD_NOT_ALLOWED: "Method Not Allowed",
   MISSING_BODY: "Missing body",
@@ -8,6 +11,9 @@ export const ERROR = {
   APPOINTMENT_SCHEDULED: "Appointment scheduled. Processing...",
 };
 
+/**
+ * Messages used in API responses.
+ */
 export const MESSAGES = {
   METHOD_NOT_ALLOWED: "Only GET and POST methods are supported",
   MISSING_BODY: "The request body is required",

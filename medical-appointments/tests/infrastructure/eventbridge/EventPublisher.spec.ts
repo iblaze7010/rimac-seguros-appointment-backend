@@ -1,4 +1,3 @@
-// tests/infrastructure/eventbridge/EventPublisher.spec.ts
 const mockSend = jest.fn();
 
 jest.mock("@aws-sdk/client-eventbridge", () => {

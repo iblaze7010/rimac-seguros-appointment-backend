@@ -16,6 +16,12 @@ const TABLE_NAME = process.env.DYNAMODB_TABLE_NAME!;
 const client = new DynamoDBClient({});
 const dynamo = DynamoDBDocumentClient.from(client);
 
+/**
+ * Saves an appointment to DynamoDB.
+ *
+ * @param appointment - The Appointment object containing appointment details.
+ * @returns Promise<void> - Promise that resolves when the operation completes.
+ */
 export async function saveAppointment(appointment: Appointment): Promise<void> {
   await dynamo.send(
     new PutCommand({
@@ -25,6 +31,13 @@ export async function saveAppointment(appointment: Appointment): Promise<void> {
   );
 }
 
+/**
+ * Updates the status of an appointment in DynamoDB.
+ *
+ * @param id - The unique identifier of the appointment.
+ * @param status - The new status to set (AppointmentStatus).
+ * @returns Promise<void> - Promise that resolves when the update is complete.
+ */
 export async function updateAppointmentStatus(
   id: string,
   status: AppointmentStatus
@@ -45,6 +58,12 @@ export async function updateAppointmentStatus(
   );
 }
 
+/**
+ * Retrieves appointments by insured ID from DynamoDB.
+ *
+ * @param insuredId - The insured person's ID to filter appointments.
+ * @returns Promise<Appointment[]> - A list of appointments related to the insured ID.
+ */
 export async function getAppointmentsByInsuredId(
   insuredId: string
 ): Promise<Appointment[]> {

@@ -1,6 +1,10 @@
 import { Appointment } from "../../domain/models/appointment";
-import mysql, { Pool } from 'mysql2/promise';
+import mysql, { Pool } from "mysql2/promise";
 
+/**
+ * MySQL connection pools keyed by country ISO code.
+ * Separate pools for PE and CL databases.
+ */
 const pools: Record<string, Pool> = {
   PE: mysql.createPool({
     host: process.env.RDS_HOST,
@@ -22,7 +26,15 @@ const pools: Record<string, Pool> = {
   }),
 };
 
-export async function saveAppointmentRDS(appointment: Appointment): Promise<void> {
+/**
+ * Saves an appointment to the appropriate RDS database based on countryISO.
+ *
+ * @param appointment - Appointment object to be saved.
+ * @throws Error if no pool is defined for the given countryISO.
+ */
+export async function saveAppointmentRDS(
+  appointment: Appointment
+): Promise<void> {
   const pool = pools[appointment.countryISO];
 
   if (!pool) {

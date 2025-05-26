@@ -1,4 +1,3 @@
-// tests/infrastructure/rds/AppointmentRepositoryRDS.spec.ts
 import {
   Appointment,
   AppointmentStatus,

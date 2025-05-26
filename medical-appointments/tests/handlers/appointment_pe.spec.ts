@@ -1,4 +1,3 @@
-// tests\handlers\appointment_pe.spec.ts
 import { handler } from "../../src/handlers/appointment_pe";
 import * as rdsRepo from "../../src/infrastructure/rds/AppointmentRepositoryRDS";
 import * as eventPublisher from "../../src/infrastructure/eventbridge/EventPublisher";

@@ -13,6 +13,13 @@ import { hasRequiredFields, isValidCountryISO } from "../utils/validation";
 import { createResponse } from "../utils/response";
 import { ERROR, MESSAGES } from "../utils/constants";
 
+/**
+ * Lambda handler for managing appointment-related HTTP requests.
+ * Supports POST (create appointment) and GET (list appointments).
+ *
+ * @param event - API Gateway event object
+ * @returns Response with appropriate status and body
+ */
 export const appointmentHandler: APIGatewayProxyHandler = async (event) => {
   try {
     switch (event.httpMethod) {
@@ -35,6 +42,13 @@ export const appointmentHandler: APIGatewayProxyHandler = async (event) => {
   }
 };
 
+/**
+ * Handles POST /appointments.
+ * Validates the request body and schedules a new appointment.
+ *
+ * @param event - API Gateway event containing the appointment data in the body
+ * @returns 202 on success, 400/422 on validation errors, 500 on server error
+ */
 const handlePostAppointment = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
@@ -78,6 +92,13 @@ const handlePostAppointment = async (
   }
 };
 
+/**
+ * Handles GET /appointments/get.
+ * Returns the list of appointments for the specified insuredId.
+ *
+ * @param event - API Gateway event with queryStringParameters containing insuredId
+ * @returns 200 with appointments, 400 if insuredId missing, or 500 on server error
+ */
 const handleGetAppointments = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {

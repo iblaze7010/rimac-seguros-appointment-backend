@@ -47,17 +47,6 @@ La solución utiliza servicios serverless de AWS como Lambda, SNS, SQS, DynamoDB
 
 ---
 
-## Estructura del proyecto
-
-src/
-├── application/ # Lógica de aplicación
-├── domain/ # Modelos de dominio
-├── handlers/ # Lambdas expuestas
-├── infrastructure/ # Conexiones a AWS y bases de datos
-└── tests/ # Pruebas unitarias
-
----
-
 ## Endpoints
 
 ### POST `/appointments`

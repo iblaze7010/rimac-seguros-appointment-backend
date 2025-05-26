@@ -1,5 +1,3 @@
-// tests/infrastructure/dynamodb/AppointmentRepository.spec.ts
-
 const mockSend = jest.fn();
 
 jest.mock("@aws-sdk/lib-dynamodb", () => {

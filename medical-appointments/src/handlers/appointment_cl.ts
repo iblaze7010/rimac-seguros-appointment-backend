@@ -3,6 +3,14 @@ import { saveAppointmentRDS } from "../infrastructure/rds/AppointmentRepositoryR
 import { publishAppointmentCompleted } from "../infrastructure/eventbridge/EventPublisher";
 import { Appointment } from "../domain/models/appointment";
 
+/**
+ * SQS handler to process CL appointment messages from the queue.
+ * For each record, parses the SQS message, saves the appointment in RDS,
+ * and publishes an event indicating completion.
+ *
+ * @param event - SQSEvent containing SQS records with appointment messages
+ * @throws Error if saving the appointment or publishing the event fails
+ */
 export const handler: SQSHandler = async (event: SQSEvent) => {
   for (const record of event.Records) {
     const snsMessage = JSON.parse(record.body);

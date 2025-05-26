@@ -21,7 +21,10 @@ describe("appointmentHandler", () => {
       const event = { ...baseEvent, body: null };
       const res = await appointmentHandler(event, {} as any, () => {});
       expect(res?.statusCode).toBe(400);
-      expect(res?.body).toBe("Missing body");
+      expect(JSON.parse(res?.body ?? "{}")).toEqual({
+        error: "Missing body",
+        details: "The request body is required",
+      });
     });
 
     it("returns 400 if missing required fields", async () => {
@@ -31,7 +34,10 @@ describe("appointmentHandler", () => {
       };
       const res = await appointmentHandler(event, {} as any, () => {});
       expect(res?.statusCode).toBe(400);
-      expect(res?.body).toBe("Missing required fields");
+      expect(JSON.parse(res?.body ?? "{}")).toEqual({
+        error: "Missing required fields",
+        details: "The fields insuredId, scheduleId and countryISO are required",
+      });
     });
 
     it("returns 422 if countryISO invalid", async () => {
@@ -45,7 +51,10 @@ describe("appointmentHandler", () => {
       };
       const res = await appointmentHandler(event, {} as any, () => {});
       expect(res?.statusCode).toBe(422);
-      expect(res?.body).toBe("countryISO must be PE or CL");
+      expect(JSON.parse(res?.body ?? "{}")).toEqual({
+        error: "Error countryISO",
+        details: "countryISO must be PE or CL",
+      });
     });
 
     it("returns 202 and calls saveAppointment and publishAppointment on success", async () => {
@@ -86,7 +95,10 @@ describe("appointmentHandler", () => {
 
       const res = await appointmentHandler(event, {} as any, () => {});
       expect(res?.statusCode).toBe(500);
-      expect(res?.body).toBe("Internal Server Error");
+      expect(JSON.parse(res?.body ?? "{}")).toEqual({
+        error: "Internal Server Error",
+        details: "Internal Server Error",
+      });
     });
   });
 
@@ -99,7 +111,10 @@ describe("appointmentHandler", () => {
     it("returns 400 if no insuredId", async () => {
       const res = await appointmentHandler(baseEvent, {} as any, () => {});
       expect(res?.statusCode).toBe(400);
-      expect(res?.body).toBe("Missing id query parameter");
+      expect(JSON.parse(res?.body ?? "{}")).toEqual({
+        error: "The fields insuredId, scheduleId and countryISO are required",
+        details: "Missing insuredId param",
+      });
     });
 
     it("returns 200 with appointments", async () => {
@@ -131,7 +146,10 @@ describe("appointmentHandler", () => {
 
       const res = await appointmentHandler(event, {} as any, () => {});
       expect(res?.statusCode).toBe(500);
-      expect(res?.body).toBe("Internal Server Error");
+      expect(JSON.parse(res?.body ?? "{}")).toEqual({
+        error: "Internal Server Error",
+        details: "Internal Server Error",
+      });
     });
   });
 
@@ -143,7 +161,10 @@ describe("appointmentHandler", () => {
 
       const res = await appointmentHandler(event, {} as any, () => {});
       expect(res?.statusCode).toBe(405);
-      expect(res?.body).toBe("Method Not Allowed");
+      expect(JSON.parse(res?.body ?? "{}")).toEqual({
+        error: "Method Not Allowed",
+        details: "Only GET and POST methods are supported",
+      });
     });
   });
 });

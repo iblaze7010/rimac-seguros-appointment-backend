@@ -1,5 +1,3 @@
-// tests/infrastructure/sns/NotificationPublisher.spec.ts
-
 const mockSend = jest.fn();
 
 jest.mock("@aws-sdk/client-sns", () => {

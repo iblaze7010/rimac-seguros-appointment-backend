@@ -1,4 +1,3 @@
-// tests\application\scheduleAppointment.spec.ts
 import { createAppointment } from "../../src/application/scheduleAppointment";
 import { AppointmentStatus } from "../../src/domain/models/appointment";
 import { v4 as uuidv4 } from "uuid";
